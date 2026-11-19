@@ -1,46 +1,95 @@
-# Secure app starter
+# Secure App Starter
 
-Create an independent local app with an interactive setup wizard:
+An interactive generator for a fresh React and Fastify application, with Google sign-in, administrator-approved registration, a protected workspace, and account audit trails.
+
+Choose an app name, three brand colors, an author, and a description. The generator creates an independent local repository with its own configuration and keys.
+
+**[Installation and usage guide → read.md](read.md)**
+
+## Quick start
+
+Requirements: Node.js **24.12 or newer within 24.x**, pnpm **10.25.x or compatible 10.x**, and Git.
+
+Replace `YOUR_USERNAME` with the GitHub account hosting this repository:
 
 ```sh
-pnpm --dir ~/WebstormProjects/secure-app-starter create:app
+git clone https://github.com/YOUR_USERNAME/secure-app-starter.git
+cd secure-app-starter
+corepack enable
+corepack prepare pnpm@10.25.0 --activate
+pnpm install --frozen-lockfile
+pnpm create:app
 ```
+
+If Corepack is unavailable, install pnpm 10.25.0 first, then run the final two commands. The repository's `packageManager` field pins the pnpm version.
 
 The wizard asks for:
 
-1. App title (also used to create the directory and repository name).
-2. Primary color — for example, `#dbe6de` (the default).
+1. App title.
+2. Primary color — default `#dbe6de`.
 3. Secondary color — default `#244a3c`.
 4. Tertiary color — default `#b8cbbd`.
-5. Author name (optional).
-6. A short app description.
+5. Author name, optionally.
+6. App description.
 
-Press Enter to accept the displayed default. Ctrl+C cancels before creating an app. If you already know the title, `pnpm create:app "Another App"` skips the title question and asks for the remaining settings. Run either command in a terminal; generation refuses to overwrite an existing directory.
+Press Enter to use a default. Enter colors as `#RGB` or `#RRGGBB`. Supporting shades and readable text colors are calculated during generation.
 
-Your three colors apply to Tailwind/shadcn components, the login panel, navigation, buttons, dialogs, the 404 page, and the favicon. Generated apps keep the exact selected palette in `apps/web/src/theme.css`. This starter uses Tailwind v4's CSS theme configuration: [Tailwind theme variables](https://tailwindcss.com/docs/theme).
+## Generated application
 
-Text colors and supporting shades are derived automatically, so light and dark brand colors remain readable. Hex input accepts `#RGB` or `#RRGGBB` and is normalized to lowercase six-digit hex.
+- React, TypeScript, Vite, Tailwind CSS v4, and shadcn/ui.
+- TanStack Query for server state and Zustand for UI state.
+- Fastify and MongoDB, with Google OAuth using state and PKCE.
+- HttpOnly cookie sessions, inactivity expiry, and session revocation.
+- Administrator-approved registrations and account-scoped audit records.
+- Login, registration, 404, protected workspace, security, and approval screens.
+- Unique local RSA/encryption keys, separate Git history, app-specific ports, and Docker configuration.
 
-The app title, author, description, and three theme colors are saved in `app.config.json`. Author and description also populate package and HTML page metadata; the description appears on the login page. Author metadata is optional and no name is read from your Git account.
+The login and 404 screens can run locally before Google and MongoDB are configured. Signing in requires the generated app's own Google OAuth credentials, database connection, and administrator configuration. See the generated app's README for the database setup and security boundaries.
 
-For scripting, pass settings directly and use `--yes` to skip prompts:
+## Use your own colors and metadata
+
+From the cloned starter directory:
 
 ```sh
-pnpm --dir ~/WebstormProjects/secure-app-starter create:app "Another App" \
+pnpm create:app "Route Planner" \
   --primary "#dbe6de" \
   --secondary "#244a3c" \
   --tertiary "#b8cbbd" \
   --author "Your Name" \
-  --description "A workspace for my next idea." \
+  --description "Plan your next route in one place." \
   --yes
 ```
 
-Optional flags: `--directory /absolute/parent/path`, `--primary "#RRGGBB"`, `--secondary "#RRGGBB"`, `--tertiary "#RRGGBB"`, `--author`, `--description`, `--yes` (`-y`), and `--help` (`-h`). A title-only command in a noninteractive shell keeps using defaults. Install the generator's dependencies once with `pnpm install` in this folder.
+The app is created beside the starter directory by default. `--directory` selects an existing parent directory. Existing projects are never overwritten. The generator creates a local Git repository; it does not create a GitHub repository or deploy the app.
 
-The generator creates a sibling directory, fresh Git repository on `main`, unique local keys, a blank private `.env`, and app-specific ports/cookies/database name. It never creates a GitHub repository, deploys, or reads another app's secrets. It does not create iOS builds.
+Generated settings are stored in `app.config.json`. Theme colors live in `apps/web/src/theme.css`, with Tailwind/shadcn mappings in `index.css`. Author and description also populate package and HTML metadata. The description appears on the login screen.
 
-Then follow the generated README, install the new app's dependencies with `pnpm install`, add its own Google/MongoDB credentials, prepare database indexes, and run `pnpm dev`.
+## Repository structure
 
-The reusable template includes React/Vite/TypeScript, Tailwind/shadcn, TanStack Query/Zustand, Fastify/MongoDB, Google OAuth, cookie sessions, encrypted audit context, administrator-approved registration, session revocation, and an empty workspace.
+```text
+secure-app-starter/
+├── create-app.mjs       # Generator and project creation
+├── settings.mjs         # Interactive prompts and CLI options
+├── themes.mjs           # Hex-color validation and theme generation
+├── template/
+│   ├── apps/api/        # Fastify authentication, access, and audit API
+│   ├── apps/web/        # React UI and shadcn components
+│   ├── scripts/         # Required setup, build, Docker, and test helpers
+│   └── ...              # App configuration, lockfile, and tooling
+├── tests/               # Generator regression tests
+├── README.md            # Project overview
+└── read.md              # Complete installation and usage guide
+```
 
-Run `pnpm test` and `pnpm format:check` here to check the generator. Run `pnpm check` in a generated project to validate the app.
+**Keep `template/scripts/` committed.** Generated applications also need their `scripts/` directory committed. These contain source code; the private `.env` and `.secrets/` files they create are ignored by Git.
+
+## Development checks
+
+```sh
+pnpm test
+pnpm format:check
+```
+
+Inside a generated application, run `pnpm check` for lint, formatting, tests, and builds. Google/MongoDB integration requires your own configured services; regression tests use synthetic accounts and a transactional database double.
+
+See **[read.md](read.md)** for setup, command options, troubleshooting, and what belongs in a public repository.
