@@ -27,5 +27,7 @@
   "engines": {
     "node": ">=24.12 <25",
     "pnpm": ">=10.25 <11"
-  }
+  },
+  "author": __APP_AUTHOR_JSON__,
+  "description": __APP_DESCRIPTION_JSON__
 }

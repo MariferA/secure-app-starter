@@ -23,7 +23,7 @@ test('public browser configuration has an explicit allowlist', () => {
     },
     { name: 'New App', slug: 'new-app' },
   );
-  assert.deepEqual(Object.keys(config), ['name', 'slug', 'apiUrl']);
+  assert.deepEqual(Object.keys(config), ['name', 'slug', 'apiUrl', 'description']);
   assert.ok(!JSON.stringify(config).includes('secret-marker'));
   assert.throws(() =>
     publicConfig(

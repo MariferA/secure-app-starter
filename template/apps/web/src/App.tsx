@@ -98,7 +98,7 @@ function AuthPage({ register = false }: { register?: boolean }) {
           <p className="muted">
             {register
               ? 'Request access with your Google account. An administrator will approve your registration.'
-              : 'Sign in to your personal workspace.'}
+              : appConfig.description}
           </p>
           {status && (
             <p role="status" className="notice">

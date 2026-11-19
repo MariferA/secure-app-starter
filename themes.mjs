@@ -1,0 +1,210 @@
+const keys = [
+  "background",
+  "foreground",
+  "card",
+  "primary",
+  "secondary",
+  "secondary-foreground",
+  "muted",
+  "muted-foreground",
+  "border",
+  "ring",
+  "story",
+  "story-foreground",
+  "story-accent",
+  "story-muted",
+  "surface",
+  "quiet",
+  "notice",
+  "notice-foreground",
+  "notice-border",
+  "decoration",
+];
+const definitions = [
+  [
+    "forest",
+    "Forest green",
+    [
+      "#f7f8f3",
+      "#26382f",
+      "#ffffff",
+      "#254f3c",
+      "#e9eee6",
+      "#244a3c",
+      "#edf0e9",
+      "#66746b",
+      "#dce3d9",
+      "#729464",
+      "#163b30",
+      "#f4f8e9",
+      "#d9f584",
+      "#c5d6c8",
+      "#fbfcf8",
+      "#758077",
+      "#f0f2e9",
+      "#5a623c",
+      "#dce3ca",
+      "#d1dfbf",
+    ],
+  ],
+  [
+    "blue",
+    "Ocean blue",
+    [
+      "#f6f8fc",
+      "#172a47",
+      "#ffffff",
+      "#1d4ed8",
+      "#e8effb",
+      "#1e3a8a",
+      "#edf2fa",
+      "#52647e",
+      "#d9e2f0",
+      "#3b82f6",
+      "#102a56",
+      "#eff6ff",
+      "#93c5fd",
+      "#c2d5f3",
+      "#fbfcff",
+      "#64748b",
+      "#eff6ff",
+      "#1e40af",
+      "#bfdbfe",
+      "#c5d6f4",
+    ],
+  ],
+  [
+    "violet",
+    "Violet",
+    [
+      "#f9f7fc",
+      "#302244",
+      "#ffffff",
+      "#6d28d9",
+      "#f0e9fb",
+      "#5b21b6",
+      "#f3eef8",
+      "#70607e",
+      "#e4dced",
+      "#8b5cf6",
+      "#2e1554",
+      "#f5f3ff",
+      "#c4b5fd",
+      "#d9c9ee",
+      "#fdfbff",
+      "#7c6c8a",
+      "#f5f3ff",
+      "#5b21b6",
+      "#ddd6fe",
+      "#ddd0f0",
+    ],
+  ],
+  [
+    "rose",
+    "Rose",
+    [
+      "#fcf7f9",
+      "#442535",
+      "#ffffff",
+      "#be185d",
+      "#fce7f0",
+      "#9d174d",
+      "#faf0f4",
+      "#806170",
+      "#eedce4",
+      "#ec4899",
+      "#4c1735",
+      "#fff1f2",
+      "#fda4af",
+      "#edcadb",
+      "#fffbfc",
+      "#8b6b7b",
+      "#fff1f2",
+      "#9f1239",
+      "#fecdd3",
+      "#efcddd",
+    ],
+  ],
+  [
+    "amber",
+    "Warm amber",
+    [
+      "#fffbf4",
+      "#422b1d",
+      "#ffffff",
+      "#92400e",
+      "#fef3c7",
+      "#78350f",
+      "#faf0df",
+      "#786042",
+      "#eaddc5",
+      "#b7791f",
+      "#452810",
+      "#fffbeb",
+      "#fcd34d",
+      "#e9d2ad",
+      "#fffdf8",
+      "#80684a",
+      "#fffbeb",
+      "#78350f",
+      "#fde68a",
+      "#eddbb9",
+    ],
+  ],
+  [
+    "slate",
+    "Slate",
+    [
+      "#f8fafc",
+      "#1e293b",
+      "#ffffff",
+      "#334155",
+      "#e8edf3",
+      "#334155",
+      "#f1f5f9",
+      "#526175",
+      "#dce3ec",
+      "#64748b",
+      "#172133",
+      "#f8fafc",
+      "#cbd5e1",
+      "#bfcbdc",
+      "#fcfdff",
+      "#64748b",
+      "#f1f5f9",
+      "#334155",
+      "#d4dce7",
+      "#d1dbe7",
+    ],
+  ],
+];
+export const themes = definitions.map(([id, label, values]) => ({
+  id,
+  label,
+  colors: Object.fromEntries(keys.map((key, index) => [key, values[index]])),
+}));
+export function getTheme(value = "forest") {
+  const selected = String(value).trim().toLowerCase();
+  const theme = themes.find(
+    (item, index) =>
+      item.id === selected ||
+      item.label.toLowerCase() === selected ||
+      String(index + 1) === selected,
+  );
+  if (!theme)
+    throw new Error(
+      "Choose a theme: " + themes.map((item) => item.id).join(", ") + ".",
+    );
+  return theme;
+}
+export function themeCss(theme) {
+  return (
+    "/* Tailwind v4 and shadcn share these editable theme tokens. */\n:root {\n" +
+    Object.entries(theme.colors)
+      .map(([name, value]) => "  --theme-" + name + ": " + value + ";")
+      .join("\n") +
+    "\n  --theme-surface-alpha: " +
+    theme.colors.card +
+    "b0;\n  --theme-destructive: #a63b3b;\n}\n"
+  );
+}

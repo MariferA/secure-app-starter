@@ -1,4 +1,4 @@
-# Your new workspace
+# __APP_TITLE_MARKDOWN__
 
 A fresh React + TypeScript app with Vite, Tailwind, shadcn/ui, TanStack Query, Zustand, Fastify, and MongoDB. Includes Google sign-in, administrator-approved registration, an empty protected workspace, security/audit screens, and a 404 page.
 
@@ -52,3 +52,11 @@ No financial data, bank integrations, phone builds, deployment history, or crede
 - https://developers.google.com/identity/protocols/oauth2/web-server
 - https://github.com/fastify/fastify-oauth2
 - https://ui.shadcn.com/docs/components/radix/alert-dialog
+
+## App settings
+
+`app.config.json` stores the chosen name, author, description, and theme. The author and description also populate package metadata and the HTML page metadata. The description appears on the login page.
+
+Edit `apps/web/src/theme.css` to customize the colors. Tailwind v4 uses CSS theme variables; `index.css` maps those tokens to Tailwind utilities and shadcn components. The login panel, navigation, buttons, dialogs, 404 page, and favicon use the selected preset. Changing the theme name in `app.config.json` alone does not regenerate the color values.
+
+Reference: https://tailwindcss.com/docs/theme

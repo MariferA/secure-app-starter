@@ -7,6 +7,7 @@ export default defineConfig({
   define: {
     __APP_CONFIG__: JSON.stringify({
       name: 'Test App',
+      description: 'A personal workspace built for your next idea.',
       slug: 'test-app',
       apiUrl: 'http://localhost:__API_PORT__/api',
     }),

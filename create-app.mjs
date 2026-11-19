@@ -14,6 +14,22 @@ import { spawnSync } from "node:child_process";
 import net from "node:net";
 import * as prettier from "prettier";
 import { setup } from "./template/scripts/setup.mjs";
+import { getTheme, themeCss } from "./themes.mjs";
+import {
+  metadataText,
+  defaultDescription,
+  parseCliArgs,
+  promptSettings,
+} from "./settings.mjs";
+export function escapeHtml(value) {
+  return value.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        char
+      ],
+  );
+}
 const here = fileURLToPath(new URL(".", import.meta.url));
 export function appSlug(title) {
   if (
@@ -91,10 +107,20 @@ function walk(root, prefix = "") {
 }
 export async function createApp(
   title,
-  { directory = path.dirname(here), git = true } = {},
+  {
+    directory = path.dirname(here),
+    git = true,
+    theme = "forest",
+    author = "",
+    description = defaultDescription,
+  } = {},
 ) {
-  const name = title.trim(),
-    slug = appSlug(title);
+  const slug = appSlug(title),
+    name = title.trim();
+  const selectedTheme = getTheme(theme);
+  author = metadataText(author, "Author", 100);
+  description =
+    metadataText(description, "Description", 240) || defaultDescription;
   const parent = realpathSync(directory),
     target = path.join(parent, slug);
   if (existsSync(target))
@@ -111,20 +137,36 @@ export async function createApp(
       const output = path.join(target, file);
       mkdirSync(path.dirname(output), { recursive: true });
       let content = readFileSync(path.join(template, file), "utf8");
-      for (const [token, value] of Object.entries({
+      const replacements = {
         __APP_SLUG__: slug,
         __APP_TITLE_JSON__: JSON.stringify(name),
+        __APP_AUTHOR_JSON__: JSON.stringify(author),
+        __APP_DESCRIPTION_JSON__: JSON.stringify(description),
+        __APP_THEME_JSON__: JSON.stringify(selectedTheme.id),
+        __APP_THEME_CSS__: themeCss(selectedTheme),
+        __APP_TITLE_HTML__: escapeHtml(name),
+        __APP_DESCRIPTION_HTML__: escapeHtml(description),
+        __APP_AUTHOR_META__: author
+          ? '<meta name="author" content="' + escapeHtml(author) + '" />'
+          : "",
+        __APP_TITLE_MARKDOWN__: name.replace(
+          /[\\`*_{}\[\]()#+.!<>|~-]/g,
+          "\\$&",
+        ),
+        __APP_THEME_DARK__: selectedTheme.colors.story,
+        __APP_THEME_ACCENT__: selectedTheme.colors["story-accent"],
         __WEB_PORT__: String(web),
         __API_PORT__: String(api),
         __DB_NAME__: slug.replaceAll("-", "_"),
-      }))
-        content = content.replaceAll(token, value);
-      if (
-        /__APP_SLUG__|__APP_TITLE_JSON__|__WEB_PORT__|__API_PORT__|__DB_NAME__/.test(
-          content,
-        )
-      )
-        throw new Error("Unresolved template token in " + file);
+      };
+      content = content.replace(
+        /__(?:APP_[A-Z]+(?:_[A-Z]+)*|WEB_PORT|API_PORT|DB_NAME)__/g,
+        (token) => {
+          if (Object.hasOwn(replacements, token)) return replacements[token];
+          if (token === "__APP_CONFIG__") return token;
+          throw new Error("Unresolved template token in " + file);
+        },
+      );
       if (
         file !== "pnpm-lock.yaml" &&
         (await prettier.getFileInfo(output)).inferredParser
@@ -150,7 +192,16 @@ export async function createApp(
             (result.stderr || result.error?.message),
         );
     }
-    return { target, slug, name, webPort: web, apiPort: api };
+    return {
+      target,
+      slug,
+      name,
+      theme: selectedTheme.id,
+      author,
+      description,
+      webPort: web,
+      apiPort: api,
+    };
   } catch (error) {
     rmSync(target, { recursive: true, force: true });
     throw error;
@@ -161,31 +212,43 @@ if (
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   try {
-    const args = process.argv.slice(2);
-    if (
-      !args[0] ||
-      args.length > 3 ||
-      (args.length > 1 && (args[1] !== "--directory" || !args[2]))
-    )
-      throw new Error(
-        'Usage: pnpm create:app "App Title" [--directory /absolute/parent]',
+    let options = parseCliArgs(process.argv.slice(2));
+    if (options.help) {
+      console.log(
+        'Usage: pnpm create:app ["App Title"] [--directory /parent] [--theme forest|blue|violet|rose|amber|slate] [--author "Name"] [--description "Description"] [--yes]\nRun in a terminal for interactive setup. Use --yes to accept defaults without prompts.',
       );
-    const result = await createApp(args[0], { directory: args[2] });
-    console.log(
-      "Created " +
-        result.name +
-        " at " +
-        result.target +
-        "\nWeb: http://localhost:" +
-        result.webPort +
-        " · API: http://localhost:" +
-        result.apiPort +
-        "\nNext: cd " +
-        JSON.stringify(result.target) +
-        " && pnpm install\nAdd your own Google/MongoDB settings to .env, then run pnpm dev.",
-    );
+    } else {
+      if (!options.yes && process.stdin.isTTY && process.stdout.isTTY)
+        options = await promptSettings(options, appSlug);
+      if (!options.title)
+        throw new Error(
+          'Run this command in a terminal to answer the setup prompts, or pass "App Title" with --yes.',
+        );
+      const result = await createApp(options.title, options);
+      console.log(
+        "Created " +
+          result.name +
+          " at " +
+          result.target +
+          "\nTheme: " +
+          getTheme(result.theme).label +
+          " · Author: " +
+          (result.author || "not set") +
+          "\nWeb: http://localhost:" +
+          result.webPort +
+          " · API: http://localhost:" +
+          result.apiPort +
+          "\nNext: cd " +
+          JSON.stringify(result.target) +
+          " && pnpm install\nAdd your own Google/MongoDB settings to .env, then run pnpm dev.",
+      );
+    }
   } catch (error) {
-    console.error(error.message);
-    process.exitCode = 1;
+    console.error(
+      error.name === "AbortError"
+        ? "Setup cancelled. No app was created."
+        : error.message,
+    );
+    process.exitCode = error.name === "AbortError" ? 130 : 1;
   }
 }

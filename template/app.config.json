@@ -1,1 +1,1 @@
-{ "name": __APP_TITLE_JSON__, "slug": "__APP_SLUG__" }
+{ "name": __APP_TITLE_JSON__, "slug": "__APP_SLUG__", "author": __APP_AUTHOR_JSON__, "description": __APP_DESCRIPTION_JSON__, "theme": __APP_THEME_JSON__ }

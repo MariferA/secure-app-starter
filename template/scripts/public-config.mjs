@@ -12,5 +12,5 @@ export function publicConfig(env, app) {
     (url.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
   )
     throw new Error('API_BASE_URL must be an HTTP(S) origin followed by /api');
-  return { name: app.name, slug: app.slug, apiUrl: url.href.replace(/\/$/, '') };
+  return { name: app.name, slug: app.slug, apiUrl: url.href.replace(/\/$/, ''), description: app.description || 'A personal workspace built for your next idea.' };
 }
