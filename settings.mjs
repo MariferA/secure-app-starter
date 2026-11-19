@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 import { createInterface } from "node:readline/promises";
-import { getTheme, themes } from "./themes.mjs";
+import { defaultColors, normalizeHex } from "./themes.mjs";
 export const defaultDescription =
   "A personal workspace built for your next idea.";
 export function metadataText(value, label, maxLength) {
@@ -21,7 +21,9 @@ export function parseCliArgs(args) {
     allowPositionals: true,
     options: {
       directory: { type: "string" },
-      theme: { type: "string" },
+      primary: { type: "string" },
+      secondary: { type: "string" },
+      tertiary: { type: "string" },
       author: { type: "string" },
       description: { type: "string" },
       yes: { type: "boolean", short: "y" },
@@ -55,16 +57,18 @@ export async function collectSettings(
       return value;
     }));
   validateTitle(title);
-  let theme = options.theme;
-  if (theme === undefined) {
-    write(
-      "\nChoose your color theme:\n" +
-        themes
-          .map((item, index) => "  " + (index + 1) + ". " + item.label)
-          .join("\n") +
-        "\n",
-    );
-    theme = await ask("Theme", (value) => getTheme(value).id, "forest");
+  const colors = {};
+  write("\nEnter your primary, secondary, and tertiary theme colors.\n");
+  for (const key of ["primary", "secondary", "tertiary"]) {
+    const label = key[0].toUpperCase() + key.slice(1) + " color";
+    colors[key] =
+      options[key] === undefined
+        ? await ask(
+            label,
+            (value) => normalizeHex(value, label),
+            defaultColors[key],
+          )
+        : normalizeHex(options[key], label);
   }
   const author =
     options.author ??
@@ -81,7 +85,7 @@ export async function collectSettings(
   return {
     ...options,
     title,
-    theme: getTheme(theme).id,
+    ...colors,
     author: metadataText(author, "Author", 100),
     description:
       metadataText(description, "Description", 240) || defaultDescription,

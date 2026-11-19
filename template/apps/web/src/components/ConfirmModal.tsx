@@ -69,7 +69,7 @@ export function ConfirmModal({
       >
         <AlertDialogHeader>
           <AlertDialogMedia
-            className={destructive ? 'bg-rose-50 text-destructive' : 'bg-secondary text-primary'}
+            className={destructive ? 'bg-rose-50 text-destructive' : 'bg-secondary text-secondary-foreground'}
           >
             {destructive ? <AlertTriangle aria-hidden="true" /> : <CircleHelp aria-hidden="true" />}
           </AlertDialogMedia>

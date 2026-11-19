@@ -10,13 +10,16 @@
   --color-popover: var(--card);
   --color-popover-foreground: var(--foreground);
   --color-primary: var(--primary);
-  --color-primary-foreground: var(--theme-card);
+  --color-primary-foreground: var(--theme-primary-foreground);
   --color-secondary: var(--theme-secondary);
   --color-secondary-foreground: var(--theme-secondary-foreground);
   --color-muted: var(--theme-muted);
   --color-muted-foreground: var(--theme-muted-foreground);
-  --color-accent: var(--theme-secondary);
-  --color-accent-foreground: var(--theme-story);
+  --color-tertiary: var(--theme-tertiary);
+  --color-tertiary-foreground: var(--theme-tertiary-foreground);
+  --color-link: var(--theme-link);
+  --color-accent: var(--theme-tertiary);
+  --color-accent-foreground: var(--theme-tertiary-foreground);
   --color-destructive: var(--theme-destructive);
   --color-destructive-foreground: var(--theme-card);
   --color-border: var(--theme-border);
@@ -189,7 +192,7 @@ p {
   align-items: center;
   justify-content: center;
   background: var(--theme-card);
-  color: var(--theme-primary);
+  color: var(--theme-link);
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -219,7 +222,7 @@ p {
 }
 .auth-switch a {
   font-weight: 650;
-  color: var(--theme-primary);
+  color: var(--theme-link);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -260,6 +263,7 @@ p {
   margin: 15px 0;
 }
 .text-link {
+  color: var(--theme-link);
   text-decoration: underline;
   font-weight: 700;
 }
@@ -314,7 +318,7 @@ p {
   background: var(--theme-muted);
   border-radius: 14px;
   padding: 20px;
-  color: var(--theme-secondary-foreground);
+  color: var(--theme-foreground);
   font-size: 13px;
   line-height: 1.8;
 }
@@ -339,7 +343,7 @@ p {
   background: var(--theme-surface-alpha);
 }
 .breadcrumb {
-  color: var(--theme-secondary-foreground);
+  color: var(--theme-foreground);
   font-size: 13px;
 }
 .breadcrumb span {
@@ -380,7 +384,7 @@ p {
   padding: 24px 40px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--theme-secondary-foreground);
+  color: var(--theme-foreground);
   display: flex;
   gap: 20px;
 }

@@ -1,210 +1,110 @@
-const keys = [
-  "background",
-  "foreground",
-  "card",
-  "primary",
-  "secondary",
-  "secondary-foreground",
-  "muted",
-  "muted-foreground",
-  "border",
-  "ring",
-  "story",
-  "story-foreground",
-  "story-accent",
-  "story-muted",
-  "surface",
-  "quiet",
-  "notice",
-  "notice-foreground",
-  "notice-border",
-  "decoration",
-];
-const definitions = [
-  [
-    "forest",
-    "Forest green",
-    [
-      "#f7f8f3",
-      "#26382f",
-      "#ffffff",
-      "#254f3c",
-      "#e9eee6",
-      "#244a3c",
-      "#edf0e9",
-      "#66746b",
-      "#dce3d9",
-      "#729464",
-      "#163b30",
-      "#f4f8e9",
-      "#d9f584",
-      "#c5d6c8",
-      "#fbfcf8",
-      "#758077",
-      "#f0f2e9",
-      "#5a623c",
-      "#dce3ca",
-      "#d1dfbf",
-    ],
-  ],
-  [
-    "blue",
-    "Ocean blue",
-    [
-      "#f6f8fc",
-      "#172a47",
-      "#ffffff",
-      "#1d4ed8",
-      "#e8effb",
-      "#1e3a8a",
-      "#edf2fa",
-      "#52647e",
-      "#d9e2f0",
-      "#3b82f6",
-      "#102a56",
-      "#eff6ff",
-      "#93c5fd",
-      "#c2d5f3",
-      "#fbfcff",
-      "#64748b",
-      "#eff6ff",
-      "#1e40af",
-      "#bfdbfe",
-      "#c5d6f4",
-    ],
-  ],
-  [
-    "violet",
-    "Violet",
-    [
-      "#f9f7fc",
-      "#302244",
-      "#ffffff",
-      "#6d28d9",
-      "#f0e9fb",
-      "#5b21b6",
-      "#f3eef8",
-      "#70607e",
-      "#e4dced",
-      "#8b5cf6",
-      "#2e1554",
-      "#f5f3ff",
-      "#c4b5fd",
-      "#d9c9ee",
-      "#fdfbff",
-      "#7c6c8a",
-      "#f5f3ff",
-      "#5b21b6",
-      "#ddd6fe",
-      "#ddd0f0",
-    ],
-  ],
-  [
-    "rose",
-    "Rose",
-    [
-      "#fcf7f9",
-      "#442535",
-      "#ffffff",
-      "#be185d",
-      "#fce7f0",
-      "#9d174d",
-      "#faf0f4",
-      "#806170",
-      "#eedce4",
-      "#ec4899",
-      "#4c1735",
-      "#fff1f2",
-      "#fda4af",
-      "#edcadb",
-      "#fffbfc",
-      "#8b6b7b",
-      "#fff1f2",
-      "#9f1239",
-      "#fecdd3",
-      "#efcddd",
-    ],
-  ],
-  [
-    "amber",
-    "Warm amber",
-    [
-      "#fffbf4",
-      "#422b1d",
-      "#ffffff",
-      "#92400e",
-      "#fef3c7",
-      "#78350f",
-      "#faf0df",
-      "#786042",
-      "#eaddc5",
-      "#b7791f",
-      "#452810",
-      "#fffbeb",
-      "#fcd34d",
-      "#e9d2ad",
-      "#fffdf8",
-      "#80684a",
-      "#fffbeb",
-      "#78350f",
-      "#fde68a",
-      "#eddbb9",
-    ],
-  ],
-  [
-    "slate",
-    "Slate",
-    [
-      "#f8fafc",
-      "#1e293b",
-      "#ffffff",
-      "#334155",
-      "#e8edf3",
-      "#334155",
-      "#f1f5f9",
-      "#526175",
-      "#dce3ec",
-      "#64748b",
-      "#172133",
-      "#f8fafc",
-      "#cbd5e1",
-      "#bfcbdc",
-      "#fcfdff",
-      "#64748b",
-      "#f1f5f9",
-      "#334155",
-      "#d4dce7",
-      "#d1dbe7",
-    ],
-  ],
-];
-export const themes = definitions.map(([id, label, values]) => ({
-  id,
-  label,
-  colors: Object.fromEntries(keys.map((key, index) => [key, values[index]])),
-}));
-export function getTheme(value = "forest") {
-  const selected = String(value).trim().toLowerCase();
-  const theme = themes.find(
-    (item, index) =>
-      item.id === selected ||
-      item.label.toLowerCase() === selected ||
-      String(index + 1) === selected,
-  );
-  if (!theme)
+export const defaultColors = Object.freeze({
+  primary: "#dbe6de",
+  secondary: "#244a3c",
+  tertiary: "#b8cbbd",
+});
+export function normalizeHex(value, label = "Color") {
+  if (
+    typeof value !== "string" ||
+    !/^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i.test(value.trim())
+  )
     throw new Error(
-      "Choose a theme: " + themes.map((item) => item.id).join(", ") + ".",
+      label + " must be a hex color such as #dbe6de (#RGB or #RRGGBB).",
     );
-  return theme;
+  const hex = value.trim().toLowerCase();
+  return hex.length === 4
+    ? "#" + [...hex.slice(1)].map((c) => c + c).join("")
+    : hex;
+}
+const rgb = (color) =>
+  color
+    .slice(1)
+    .match(/../g)
+    .map((channel) => parseInt(channel, 16));
+const mix = (from, to, amount) =>
+  "#" +
+  rgb(from)
+    .map((channel, index) =>
+      Math.round(channel + (rgb(to)[index] - channel) * amount)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("");
+function luminance(color) {
+  const [r, g, b] = rgb(color).map((v) => {
+    v /= 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return r * 0.2126 + g * 0.7152 + b * 0.0722;
+}
+export function contrastRatio(a, b) {
+  const values = [luminance(a), luminance(b)].sort((a, b) => b - a);
+  return (values[0] + 0.05) / (values[1] + 0.05);
+}
+function foregroundFor(background) {
+  return ["#17201b", "#ffffff", "#000000"].find(
+    (text) => contrastRatio(background, text) >= 4.5,
+  );
+}
+function readableAccent(color, background) {
+  const target = foregroundFor(background);
+  for (let step = 0; step <= 20; step++) {
+    const candidate = mix(color, target, step / 20);
+    if (contrastRatio(candidate, background) >= 4.5) return candidate;
+  }
+  return target;
+}
+export function getTheme(input = {}) {
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new Error("Use primary, secondary, and tertiary hex colors.");
+  const palette = Object.fromEntries(
+    Object.entries(defaultColors).map(([key, fallback]) => [
+      key,
+      normalizeHex(input[key] ?? fallback, key[0].toUpperCase() + key.slice(1)),
+    ]),
+  );
+  const { primary, secondary, tertiary } = palette;
+  const background = mix(primary, "#ffffff", 0.94),
+    surface = mix(primary, "#ffffff", 0.98),
+    foreground = foregroundFor(background);
+  const muted = mix(tertiary, "#ffffff", 0.88),
+    notice = mix(tertiary, "#ffffff", 0.8);
+  return {
+    palette,
+    colors: {
+      background,
+      foreground,
+      card: "#ffffff",
+      primary,
+      "primary-foreground": foregroundFor(primary),
+      secondary,
+      "secondary-foreground": foregroundFor(secondary),
+      tertiary,
+      "tertiary-foreground": foregroundFor(tertiary),
+      muted,
+      "muted-foreground": mix(foreground, background, 0.25),
+      border: mix(primary, foreground, 0.18),
+      ring: readableAccent(primary, background),
+      story: secondary,
+      "story-foreground": foregroundFor(secondary),
+      "story-accent": readableAccent(tertiary, secondary),
+      "story-muted": mix(foregroundFor(secondary), secondary, 0.15),
+      surface,
+      quiet: mix(foreground, background, 0.35),
+      link: readableAccent(primary, surface),
+      notice,
+      "notice-foreground": foregroundFor(notice),
+      "notice-border": mix(tertiary, foreground, 0.18),
+      decoration: mix(tertiary, "#ffffff", 0.4),
+    },
+  };
 }
 export function themeCss(theme) {
   return (
-    "/* Tailwind v4 and shadcn share these editable theme tokens. */\n:root {\n" +
+    "/* Your three brand colors; supporting shades and readable text are derived. */\n:root {\n" +
     Object.entries(theme.colors)
-      .map(([name, value]) => "  --theme-" + name + ": " + value + ";")
+      .map(([key, value]) => "  --theme-" + key + ": " + value + ";")
       .join("\n") +
-    "\n  --theme-surface-alpha: " +
-    theme.colors.card +
-    "b0;\n  --theme-destructive: #a63b3b;\n}\n"
+    "\n  --theme-surface-alpha: #ffffffb0;\n  --theme-destructive: #a63b3b;\n}\n"
   );
 }

@@ -11,15 +11,22 @@ import {
   metadataText,
   defaultDescription,
 } from "../settings.mjs";
-import { themes, getTheme } from "../themes.mjs";
+import {
+  defaultColors,
+  getTheme,
+  normalizeHex,
+  contrastRatio,
+} from "../themes.mjs";
 const here = path.resolve(import.meta.dirname, "..");
 const fixture = () => mkdtempSync(path.join(tmpdir(), "starter-settings-"));
-test("wizard asks for the title, validates theme answers, and accepts defaults", async () => {
+test("wizard asks for three hex colors, retries invalid input, and accepts defaults", async () => {
   const answers = [
     "../bad",
     "Sample Space",
-    "invalid",
-    "2",
+    "forest",
+    "#DBE6DE",
+    "#ABC",
+    "",
     "Sample Author",
     "",
   ];
@@ -38,17 +45,21 @@ test("wizard asks for the title, validates theme answers, and accepts defaults",
     },
   );
   assert.equal(result.title, "Sample Space");
-  assert.equal(result.theme, "blue");
+  assert.equal(result.primary, "#dbe6de");
+  assert.equal(result.secondary, "#aabbcc");
+  assert.equal(result.tertiary, defaultColors.tertiary);
   assert.equal(result.author, "Sample Author");
   assert.equal(result.description, defaultDescription);
   assert.equal(answers.length, 0);
   assert.ok(prompts[0].startsWith("App title"));
-  assert.ok(messages.some((m) => m.includes("without slashes")));
-  assert.ok(messages.some((m) => m.includes("Choose a theme:")));
+  assert.ok(prompts.some((q) => q.startsWith("Primary color")));
+  assert.ok(prompts.some((q) => q.startsWith("Secondary color")));
+  assert.ok(prompts.some((q) => q.startsWith("Tertiary color")));
+  assert.ok(messages.some((m) => m.includes("must be a hex color")));
 });
-test("existing title skips only that question and flags can provide every setting", async () => {
-  const prompts = [];
-  const answers = ["", "", ""];
+test("an existing title skips only that question, and complete flags require no questions", async () => {
+  const prompts = [],
+    answers = ["", "", "", "", ""];
   const result = await collectSettings(
     { title: "Next App" },
     {
@@ -60,51 +71,64 @@ test("existing title skips only that question and flags can provide every settin
       validateTitle: appSlug,
     },
   );
-  assert.equal(result.theme, "forest");
+  assert.equal(result.primary, defaultColors.primary);
+  assert.equal(result.secondary, defaultColors.secondary);
+  assert.equal(result.tertiary, defaultColors.tertiary);
   assert.equal(result.author, "");
-  assert.equal(prompts.length, 3);
-  assert.ok(prompts[0].startsWith("Theme"));
+  assert.equal(prompts.length, 5);
+  assert.ok(prompts[0].startsWith("Primary color"));
   const supplied = {
     title: "From Flags",
-    theme: "violet",
+    primary: "#123456",
+    secondary: "#abcdef",
+    tertiary: "#fedcba",
     author: "A. Name",
     description: "A useful app.",
   };
   assert.deepEqual(
     await collectSettings(supplied, {
-      question: async () => assert.fail("flags must not prompt"),
+      question: async () => assert.fail("complete flags must not prompt"),
       write: () => {},
       validateTitle: appSlug,
     }),
     supplied,
   );
 });
-test("CLI parsing supports interactive mode, flags and help and rejects typos", () => {
+test("CLI parses hex role flags and rejects obsolete presets and misspelled options", () => {
   assert.equal(parseCliArgs([]).title, undefined);
   assert.equal(parseCliArgs(["--help"]).help, true);
   const parsed = parseCliArgs([
     "My App",
-    "--theme=rose",
+    "--primary=#dbe6de",
+    "--secondary",
+    "#123456",
+    "--tertiary",
+    "#aabbcc",
     "--author",
     "Test Author",
     "--description",
-    "Receipts & notes",
+    "Notes",
     "--directory",
     "/tmp",
     "-y",
   ]);
-  assert.equal(parsed.theme, "rose");
+  assert.equal(parsed.primary, "#dbe6de");
+  assert.equal(parsed.secondary, "#123456");
+  assert.equal(parsed.tertiary, "#aabbcc");
   assert.equal(parsed.yes, true);
   assert.equal(parsed.directory, "/tmp");
   assert.throws(() => parseCliArgs(["one", "two"]));
-  assert.throws(() => parseCliArgs(["--theem", "blue"]));
+  assert.throws(() => parseCliArgs(["--theme", "forest"]));
+  assert.throws(() => parseCliArgs(["--primery", "#fff"]));
   assert.throws(() => parseCliArgs(["--author"]));
 });
-test("unsupported themes and invalid metadata fail before creating any files", async () => {
+test("invalid hex colors and metadata fail before creating any files", async () => {
   const directory = fixture();
   try {
     for (const options of [
-      { theme: "custom; color:red" },
+      { primary: "custom; color:red" },
+      { secondary: "#abcd" },
+      { tertiary: "blue" },
       { author: "invalid\nname" },
       { description: "x".repeat(241) },
     ])
@@ -125,7 +149,9 @@ test("generated theme, favicon and metadata share the chosen settings and preser
       description = 'Track "$&" <script>alert("x")</script> & __APP_SLUG__.';
     const app = await createApp(name, {
       directory,
-      theme: "violet",
+      primary: "#dbe6de",
+      secondary: "#244a3c",
+      tertiary: "#b8cbbd",
       author,
       description,
     });
@@ -137,7 +163,7 @@ test("generated theme, favicon and metadata share the chosen settings and preser
       slug: "field",
       author,
       description,
-      theme: "violet",
+      theme: { ...defaultColors },
     });
     for (const file of [
       "package.json",
@@ -177,8 +203,10 @@ test("generated theme, favicon and metadata share the chosen settings and preser
       path.join(app.target, "apps/web/src/theme.css"),
       "utf8",
     );
-    assert.ok(css.includes("--theme-primary: #6d28d9"));
-    assert.ok(css.includes("--theme-story: #2e1554"));
+    assert.ok(css.includes("--theme-primary: #dbe6de"));
+    assert.ok(css.includes("--theme-secondary: #244a3c"));
+    assert.ok(css.includes("--theme-tertiary: #b8cbbd"));
+
     assert.ok(!/__APP_THEME/.test(css));
     const styles = readFileSync(
       path.join(app.target, "apps/web/src/index.css"),
@@ -190,38 +218,54 @@ test("generated theme, favicon and metadata share the chosen settings and preser
       path.join(app.target, "apps/web/public/favicon.svg"),
       "utf8",
     );
-    assert.ok(icon.includes("#2e1554"));
-    assert.ok(icon.includes("#c4b5fd"));
+    const selected = getTheme(defaultColors);
+    assert.ok(icon.includes(selected.colors.story));
+    assert.ok(icon.includes(selected.colors["story-accent"]));
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
 });
-test("all presets have complete colors and readable primary and story text", () => {
-  const luminance = (hex) => {
-    const rgb = hex
-      .slice(1)
-      .match(/../g)
-      .map((c) => parseInt(c, 16) / 255)
-      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
-  };
-  const contrast = (a, b) => {
-    const values = [luminance(a), luminance(b)].sort((a, b) => b - a);
-    return (values[0] + 0.05) / (values[1] + 0.05);
-  };
-  for (const [index, theme] of themes.entries()) {
-    assert.equal(getTheme(String(index + 1)), theme);
-    assert.deepEqual(Object.keys(theme.colors), Object.keys(themes[0].colors));
-    for (const color of Object.values(theme.colors))
-      assert.match(color, /^#[0-9a-f]{6}$/);
+test("hex normalization preserves exact color choices and rejects CSS payloads", () => {
+  assert.equal(normalizeHex("#DBE6DE"), "#dbe6de");
+  assert.equal(normalizeHex(" #aBc "), "#aabbcc");
+  for (const value of [
+    "forest",
+    "123456",
+    "#abcd",
+    "#12345678",
+    "#ffgg00",
+    "#fff; color:red",
+    "rgb(1,2,3)",
+    null,
+  ])
+    assert.throws(() => normalizeHex(value));
+  assert.throws(() => getTheme("forest"));
+  assert.deepEqual(getTheme().palette, defaultColors);
+});
+test("light, dark, vivid and matching colors retain all three values with readable text", () => {
+  for (const palette of [
+    defaultColors,
+    { primary: "#ffffff", secondary: "#ffffff", tertiary: "#ffffff" },
+    { primary: "#000000", secondary: "#000000", tertiary: "#000000" },
+    { primary: "#777777", secondary: "#123456", tertiary: "#ffff00" },
+    { primary: "#ff0000", secondary: "#00ff00", tertiary: "#0000ff" },
+  ]) {
+    const theme = getTheme(palette);
+    assert.deepEqual(theme.palette, palette);
+    for (const value of Object.values(theme.colors))
+      assert.match(value, /^#[0-9a-f]{6}$/);
+    for (const role of ["primary", "secondary", "tertiary", "story"])
+      assert.ok(
+        contrastRatio(theme.colors[role], theme.colors[role + "-foreground"]) >=
+          4.5,
+        role + " text contrast",
+      );
+    assert.ok(contrastRatio(theme.colors.link, theme.colors.surface) >= 4.5);
     assert.ok(
-      contrast(theme.colors.primary, theme.colors.card) >= 4.5,
-      theme.id + " button contrast",
+      contrastRatio(theme.colors["story-accent"], theme.colors.story) >= 4.5,
     );
-    assert.ok(
-      contrast(theme.colors.story, theme.colors["story-foreground"]) >= 4.5,
-      theme.id + " story contrast",
-    );
+    for (const role of ["primary", "secondary", "tertiary"])
+      assert.equal(theme.colors[role], palette[role]);
   }
 });
 test("noninteractive CLI accepts settings without hanging and missing titles explain how to run", () => {
@@ -242,8 +286,12 @@ test("noninteractive CLI accepts settings without hanging and missing titles exp
         "CLI Sample",
         "--directory",
         directory,
-        "--theme",
-        "amber",
+        "--primary",
+        "#dbe6de",
+        "--secondary",
+        "#123456",
+        "--tertiary",
+        "#fedcba",
         "--author",
         "Test Author",
         "--description",
@@ -253,13 +301,20 @@ test("noninteractive CLI accepts settings without hanging and missing titles exp
       { cwd: here, encoding: "utf8", timeout: 20000 },
     );
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /Warm amber/);
+    assert.match(
+      result.stdout,
+      /primary #dbe6de, secondary #123456, tertiary #fedcba/,
+    );
     const config = JSON.parse(
       readFileSync(path.join(directory, "cli-sample/app.config.json"), "utf8"),
     );
     assert.equal(config.author, "Test Author");
     assert.equal(config.description, "A sample workspace.");
-    assert.equal(config.theme, "amber");
+    assert.deepEqual(config.theme, {
+      primary: "#dbe6de",
+      secondary: "#123456",
+      tertiary: "#fedcba",
+    });
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

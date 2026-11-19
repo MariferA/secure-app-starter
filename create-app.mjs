@@ -110,14 +110,16 @@ export async function createApp(
   {
     directory = path.dirname(here),
     git = true,
-    theme = "forest",
+    primary,
+    secondary,
+    tertiary,
     author = "",
     description = defaultDescription,
   } = {},
 ) {
   const slug = appSlug(title),
     name = title.trim();
-  const selectedTheme = getTheme(theme);
+  const selectedTheme = getTheme({ primary, secondary, tertiary });
   author = metadataText(author, "Author", 100);
   description =
     metadataText(description, "Description", 240) || defaultDescription;
@@ -142,7 +144,7 @@ export async function createApp(
         __APP_TITLE_JSON__: JSON.stringify(name),
         __APP_AUTHOR_JSON__: JSON.stringify(author),
         __APP_DESCRIPTION_JSON__: JSON.stringify(description),
-        __APP_THEME_JSON__: JSON.stringify(selectedTheme.id),
+        __APP_THEME_JSON__: JSON.stringify(selectedTheme.palette),
         __APP_THEME_CSS__: themeCss(selectedTheme),
         __APP_TITLE_HTML__: escapeHtml(name),
         __APP_DESCRIPTION_HTML__: escapeHtml(description),
@@ -196,7 +198,7 @@ export async function createApp(
       target,
       slug,
       name,
-      theme: selectedTheme.id,
+      theme: selectedTheme.palette,
       author,
       description,
       webPort: web,
@@ -215,7 +217,7 @@ if (
     let options = parseCliArgs(process.argv.slice(2));
     if (options.help) {
       console.log(
-        'Usage: pnpm create:app ["App Title"] [--directory /parent] [--theme forest|blue|violet|rose|amber|slate] [--author "Name"] [--description "Description"] [--yes]\nRun in a terminal for interactive setup. Use --yes to accept defaults without prompts.',
+        'Usage: pnpm create:app ["App Title"] [--directory /parent] [--primary "#dbe6de"] [--secondary "#244a3c"] [--tertiary "#b8cbbd"] [--author "Name"] [--description "Description"] [--yes]\nRun in a terminal for interactive setup. Use --yes to accept defaults without prompts.',
       );
     } else {
       if (!options.yes && process.stdin.isTTY && process.stdout.isTTY)
@@ -231,7 +233,12 @@ if (
           " at " +
           result.target +
           "\nTheme: " +
-          getTheme(result.theme).label +
+          "primary " +
+          result.theme.primary +
+          ", secondary " +
+          result.theme.secondary +
+          ", tertiary " +
+          result.theme.tertiary +
           " · Author: " +
           (result.author || "not set") +
           "\nWeb: http://localhost:" +

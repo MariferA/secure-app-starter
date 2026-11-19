@@ -55,8 +55,8 @@ No financial data, bank integrations, phone builds, deployment history, or crede
 
 ## App settings
 
-`app.config.json` stores the chosen name, author, description, and theme. The author and description also populate package metadata and the HTML page metadata. The description appears on the login page.
+`app.config.json` stores the chosen name, author, description, and the primary/secondary/tertiary hex colors. The author and description also populate package metadata and the HTML page metadata. The description appears on the login page.
 
-Edit `apps/web/src/theme.css` to customize the colors. Tailwind v4 uses CSS theme variables; `index.css` maps those tokens to Tailwind utilities and shadcn components. The login panel, navigation, buttons, dialogs, 404 page, and favicon use the selected preset. Changing the theme name in `app.config.json` alone does not regenerate the color values.
+Edit `apps/web/src/theme.css` to customize the colors. Tailwind v4 uses CSS theme variables; `index.css` maps those tokens to Tailwind utilities and shadcn components. The login panel, navigation, buttons, dialogs, 404 page, and favicon use your palette. Your exact hex colors are kept as `--theme-primary`, `--theme-secondary`, and `--theme-tertiary`; supporting shades and contrasting text colors are derived automatically. Changing `app.config.json` alone does not regenerate the CSS.
 
 Reference: https://tailwindcss.com/docs/theme
