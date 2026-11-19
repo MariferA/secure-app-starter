@@ -1,0 +1,13 @@
+# GUI Git clients may not inherit the Node/pnpm PATH from an interactive terminal.
+if ! command -v node >/dev/null 2>&1 || ! command -v pnpm >/dev/null 2>&1; then
+  if [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
+    . "${NVM_DIR:-$HOME/.nvm}/nvm.sh"
+  fi
+fi
+
+if ! command -v node >/dev/null 2>&1 || ! command -v pnpm >/dev/null 2>&1; then
+  echo "Commit blocked: Node.js and pnpm must be available to run pnpm check." >&2
+  exit 1
+fi
+
+exec pnpm check

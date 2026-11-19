@@ -1,0 +1,57 @@
+name: __APP_SLUG__
+services:
+  api:
+    build: { context: ., target: api }
+    user: '${APP_UID:-1000}:${APP_GID:-1000}'
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      API_HOST: 0.0.0.0
+      API_PORT: 3000
+      FRONTEND_URL: ${FRONTEND_URL}
+      API_BASE_URL: ${API_BASE_URL}
+      MONGODB_URI: ${MONGODB_URI}
+      MONGODB_APP_DATABASE: ${MONGODB_APP_DATABASE}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_ALLOWED_EMAILS: ${GOOGLE_ALLOWED_EMAILS}
+      GOOGLE_ALLOWED_SUBJECTS: ${GOOGLE_ALLOWED_SUBJECTS}
+      AUDIT_RETENTION_DAYS: ${AUDIT_RETENTION_DAYS:-180}
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
+      JWT_PRIVATE_KEY_FILE: /run/app-secrets/jwt-private.pem
+      JWT_PUBLIC_KEY_FILE: /run/app-secrets/jwt-public.pem
+      COOKIE_KEY_FILE: /run/app-secrets/cookie-key
+      DATA_KEY_FILE: /run/app-secrets/data-key
+    ports: ['127.0.0.1:${API_PORT:-__API_PORT__}:3000']
+    volumes: ['./.secrets:/run/app-secrets:ro']
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  web:
+    build:
+      context: .
+      target: web
+      args: { API_BASE_URL: '${API_BASE_URL}' }
+    restart: unless-stopped
+    ports: ['127.0.0.1:${WEB_PORT:-__WEB_PORT__}:8080']
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8080/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
